@@ -1,0 +1,43 @@
+{
+  "tested_at": "2026-03-20T23:08:30.335932",
+  "results": {
+    "perplexity": {
+      "status": "error",
+      "error": "[WinError 2] The system cannot find the file specified"
+    },
+    "linear": {
+      "status": "error",
+      "error": "[WinError 2] The system cannot find the file specified"
+    },
+    "github": {
+      "status": "error",
+      "error": "[WinError 2] The system cannot find the file specified"
+    },
+    "brave": {
+      "status": "error",
+      "error": "[WinError 2] The system cannot find the file specified"
+    },
+    "firecrawl": {
+      "status": "error",
+      "error": "[WinError 2] The system cannot find the file specified"
+    },
+    "chrome": {
+      "status": "error",
+      "error": "[WinError 2] The system cannot find the file specified"
+    },
+    "playwright": {
+      "status": "error",
+      "error": "[WinError 2] The system cannot find the file specified"
+    },
+    "context7": {
+      "status": "skipped",
+      "reason": "Missing: CONTEXT7_API_KEY"
+    }
+  },
+  "summary": {
+    "healthy": 0,
+    "skipped": 1,
+    "error": 7,
+    "total": 8
+  }
+}

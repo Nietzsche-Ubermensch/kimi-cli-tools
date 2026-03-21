@@ -1,0 +1,31 @@
+{
+  "tested_at": "2026-03-20T23:07:47.130406",
+  "servers": {
+    "perplexity": {
+      "status": "\u274c error: No module named 'perplexity_ask'"
+    },
+    "linear": {
+      "status": "\u274c error: No module named 'linear_getTeams'"
+    },
+    "github": {
+      "status": "\u274c error: No module named 'search_repositories'"
+    },
+    "brave": {
+      "status": "\u274c error: No module named 'brave_web_search'"
+    },
+    "firecrawl": {
+      "status": "\u274c error: No module named 'firecrawl_map'"
+    },
+    "chrome": {
+      "status": "\u274c error: No module named 'list_pages'"
+    },
+    "playwright": {
+      "status": "\u26a0\ufe0f  skipped (requires manual setup)",
+      "note": "Playwright MCP server needs browser instance"
+    },
+    "context7": {
+      "status": "\u26a0\ufe0f  skipped (no API key)",
+      "note": "Add CONTEXT7_API_KEY to .env to enable"
+    }
+  }
+}
