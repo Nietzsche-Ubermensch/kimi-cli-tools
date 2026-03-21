@@ -1,0 +1,31 @@
+#!/usr/bin/env node
+/**
+ * /do - Do what I mean
+ */
+const { execSync } = require('child_process');
+const fs = require('fs');
+
+const [,, ...args] = process.argv;
+const arg = args.join(' ');
+
+if (!arg || arg === '--help') {
+  console.log(`Usage: /do <intent description> OR /do @workflow.json`);
+  process.exit(0);
+}
+
+// If it's a JSON file, run workflow
+if (arg.endsWith('.json') && fs.existsSync(arg)) {
+  const wf = JSON.parse(fs.readFileSync(arg));
+  const json = JSON.stringify({ steps: wf.steps }).replace(/"/g, '\\"');
+  try {
+    execSync(`echo "${json}" | npx -y @anthropic-ai/mcp-tool conductor workflow_orchestrate`,
+      { stdio: ['pipe', 'inherit', 'inherit'] });
+  } catch { process.exit(1); }
+} else {
+  // Otherwise treat as intent
+  const json = JSON.stringify({ intent: arg }).replace(/"/g, '\\"');
+  try {
+    execSync(`echo "${json}" | npx -y @anthropic-ai/mcp-tool conductor intent_to_execution`,
+      { stdio: ['pipe', 'inherit', 'inherit'] });
+  } catch { process.exit(1); }
+}

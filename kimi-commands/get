@@ -1,0 +1,24 @@
+#!/usr/bin/env node
+/**
+ * /get - Get web content
+ */
+const { execSync } = require('child_process');
+const [,,url, ...opts] = process.argv;
+
+if (!url || url === '--help') {
+  console.log(`Usage: /get <url> [--json|--html] [--wait=ms]`);
+  process.exit(0);
+}
+
+const args = { url, formats: ['markdown'], onlyMainContent: true };
+for (const o of opts) {
+  if (o === '--json') args.formats = ['json'];
+  if (o === '--html') args.formats = ['html'];
+  if (o.startsWith('--wait=')) args.waitFor = parseInt(o.split('=')[1]);
+}
+
+const json = JSON.stringify(args).replace(/"/g, '\\"');
+try {
+  execSync(`echo "${json}" | npx -y @anthropic-ai/mcp-tool firecrawl-mcp firecrawl_scrape`, 
+    { stdio: ['pipe', 'inherit', 'inherit'] });
+} catch { process.exit(1); }

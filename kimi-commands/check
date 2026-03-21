@@ -1,0 +1,17 @@
+#!/usr/bin/env node
+/**
+ * /check - Check job status
+ */
+const { execSync } = require('child_process');
+const [,, jobId] = process.argv;
+
+if (!jobId) {
+  console.log(`Usage: /check <job-id>`);
+  process.exit(0);
+}
+
+const json = JSON.stringify({ plan_id: jobId }).replace(/"/g, '\\"');
+try {
+  execSync(`echo "${json}" | npx -y @anthropic-ai/mcp-tool conductor get_execution_status`,
+    { stdio: ['pipe', 'inherit', 'inherit'] });
+} catch { process.exit(1); }
