@@ -1,0 +1,44 @@
+{
+  "name": "yolo-mode",
+  "version": "1.0.0",
+  "description": "Autonomous execution mode for Kimi CLI",
+  "triggers": ["/yolo", "yolo mode", "just do it", "proceed without asking"],
+  "commands": {
+    "on": {
+      "trigger": "/yolo",
+      "action": "enable",
+      "response": "🚀 Yolo mode activated. I'll proceed with actions without confirmation."
+    },
+    "off": {
+      "trigger": "/yolo off",
+      "action": "disable",
+      "response": "🛑 Yolo mode deactivated. I'll ask for confirmation before actions."
+    },
+    "status": {
+      "trigger": "/yolo status",
+      "action": "status",
+      "response": "Yolo mode is currently: {status}"
+    }
+  },
+  "guardrails": {
+    "always_confirm": [
+      "delete directory",
+      "access outside working directory",
+      "elevated privileges",
+      "production deployment",
+      "expose credentials"
+    ],
+    "auto_execute": [
+      "file write",
+      "shell command",
+      "git commit",
+      "package install",
+      "mcp tool call",
+      "github operation"
+    ]
+  },
+  "environment": {
+    "variable": "KIMI_YOLO_MODE",
+    "default": false
+  }
+}

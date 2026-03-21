@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""MCP Workflow Automation - Pre-built execution chains"""
+"""
+MCP Workflow Automation
+Pre-built execution chains for common tasks
+"""
 
 import asyncio
 from typing import Dict, Any, List
@@ -11,9 +14,15 @@ class MCPWorkflows:
     
     @staticmethod
     async def research_to_linear(topic: str, team_id: str) -> Dict[str, Any]:
-        """Chain: Research → Create Linear Issue"""
+        """
+        Chain: Research → Create Linear Issue
+        
+        1. Use Perplexity to research topic
+        2. Create Linear issue with findings
+        """
         print(f"\n🔍 Researching: {topic}")
         
+        # Step 1: Research
         research_result = {
             "topic": topic,
             "summary": f"Research summary for {topic}",
@@ -21,8 +30,9 @@ class MCPWorkflows:
             "timestamp": datetime.now().isoformat()
         }
         
-        print(f"✅ Research complete")
+        print(f"✅ Research complete: {len(research_result['summary'])} chars")
         
+        # Step 2: Create Linear issue
         issue = {
             "title": f"Research: {topic}",
             "description": research_result["summary"],
@@ -40,9 +50,18 @@ class MCPWorkflows:
     
     @staticmethod
     async def bug_fix_workflow(issue_id: str, repo: str) -> Dict[str, Any]:
-        """Chain: Bug Fix Workflow"""
+        """
+        Chain: Bug Fix Workflow
+        
+        1. Read Linear issue
+        2. Search GitHub for failing code
+        3. Research fix
+        4. Create PR
+        5. Update Linear issue
+        """
         print(f"\n🐛 Bug Fix Workflow: {issue_id}")
         
+        # Step 1: Get Linear issue
         issue = {
             "id": issue_id,
             "title": "Example bug",
@@ -50,18 +69,21 @@ class MCPWorkflows:
         }
         print(f"✅ Read issue: {issue['title']}")
         
+        # Step 2: Search GitHub
         code_search = {
             "query": f"repo:{repo} {issue['title']}",
             "results": ["file1.py", "file2.py"]
         }
         print(f"✅ Found {len(code_search['results'])} relevant files")
         
+        # Step 3: Research fix
         solution = {
             "approach": "Fix approach",
             "code_changes": "diff here"
         }
         print(f"✅ Research complete")
         
+        # Step 4: Create PR
         pr = {
             "title": f"Fix: {issue['title']}",
             "body": f"Closes {issue_id}\n\n{solution['approach']}",
@@ -69,6 +91,7 @@ class MCPWorkflows:
         }
         print(f"✅ PR created: {pr['title']}")
         
+        # Step 5: Update Linear
         print(f"✅ Linear issue updated")
         
         return {
@@ -80,24 +103,35 @@ class MCPWorkflows:
     
     @staticmethod
     async def competitive_analysis(query: str, team_id: str) -> Dict[str, Any]:
-        """Chain: Competitive Analysis"""
+        """
+        Chain: Competitive Analysis
+        
+        1. Brave Search for competitors
+        2. Firecrawl competitor pages
+        3. Perplexity deep research
+        4. Create Linear issue with summary
+        """
         print(f"\n🦁 Competitive Analysis: {query}")
         
+        # Step 1: Search
         competitors = ["competitor1.com", "competitor2.com", "competitor3.com"]
         print(f"✅ Found {len(competitors)} competitors")
         
+        # Step 2: Scrape
         scraped_data = []
         for comp in competitors:
             data = {"url": comp, "content": f"Content from {comp}"}
             scraped_data.append(data)
         print(f"✅ Scraped {len(scraped_data)} pages")
         
+        # Step 3: Research
         analysis = {
             "summary": "Competitive analysis summary",
             "key_findings": ["finding1", "finding2"]
         }
         print(f"✅ Analysis complete")
         
+        # Step 4: Create issue
         issue = {
             "title": f"Competitive Analysis: {query}",
             "description": analysis["summary"],
@@ -114,15 +148,25 @@ class MCPWorkflows:
     
     @staticmethod
     async def scraper_build_workflow(target_url: str, output_repo: str) -> Dict[str, Any]:
-        """Chain: Build a Scraper"""
+        """
+        Chain: Build a Scraper
+        
+        1. Research target with Perplexity
+        2. Test extraction with Firecrawl
+        3. Write Python scraper code
+        4. Push to GitHub
+        """
         print(f"\n🔥 Scraper Build: {target_url}")
         
+        # Step 1: Research
         research = {"target": target_url, "structure": "HTML structure info"}
         print(f"✅ Research complete")
         
+        # Step 2: Test extraction
         test_data = {"url": target_url, "extracted": "sample data"}
         print(f"✅ Extraction test successful")
         
+        # Step 3: Generate code
         scraper_code = f"""
 # Generated scraper for {target_url}
 import requests
@@ -138,6 +182,7 @@ if __name__ == "__main__":
 """
         print(f"✅ Scraper code generated ({len(scraper_code)} chars)")
         
+        # Step 4: Push to GitHub
         commit = {
             "repo": output_repo,
             "message": f"Add scraper for {target_url}",
@@ -208,6 +253,7 @@ async def main():
     for wf in runner.list_workflows():
         print(f"  • {wf}")
     
+    # Demo: Research workflow
     await runner.run(
         "research_to_linear",
         topic="MCP server best practices",

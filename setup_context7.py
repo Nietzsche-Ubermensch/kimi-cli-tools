@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Context7 MCP Server Setup Script"""
+"""
+Context7 MCP Server Setup Script
+Automates the configuration of Context7 documentation lookup
+"""
 
 import os
 import sys
@@ -57,6 +60,7 @@ def verify_mcp_config():
         return True
     else:
         print("⚠️ Context7 server NOT found in mcp_config.json")
+        print("   Run: python setup_context7.py --fix-config")
         return False
 
 
@@ -87,6 +91,7 @@ def main():
     print("Context7 MCP Server Setup")
     print("=" * 60)
     
+    # Check arguments
     if "--fix-config" in sys.argv:
         fix_mcp_config()
         return
@@ -95,6 +100,7 @@ def main():
         add_context7_to_env()
         return
     
+    # Full setup check
     print("\n1. Checking .env file...")
     env_ok = check_env_file()
     

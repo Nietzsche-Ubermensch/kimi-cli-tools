@@ -19,7 +19,7 @@ kimi "Research Playwright stealth with Perplexity, scrape HN top 3 headlines wit
 ┌─────────────────────────────────────────────────────┐
 │                    Kimi CLI                          │
 │  ┌──────────────┐  ┌──────────────┐  ┌───────────┐  │
-│  │   Kimi K2.5  │  │ 8 MCP Servers│  │ 15 Tools  │  │
+│  │   Kimi K2.5  │  │ 7 MCP Servers│  │ 15 Tools  │  │
 │  │  (256k ctx)  │  │              │  │           │  │
 │  └──────────────┘  └──────────────┘  └───────────┘  │
 └─────────────────────────────────────────────────────┘
@@ -157,6 +157,28 @@ DEEPSEEK_API_KEY=...
 
 ---
 
+## Usage Examples
+
+### Web Scraping Pipeline
+```bash
+kimi "Scrape https://example.com pricing with Firecrawl, 
+      handle anti-bot with Playwright if needed, 
+      save results to GitHub gist"
+```
+
+### Research to Linear
+```bash
+kimi "Research React 19 features via Perplexity,
+      summarize top 5, create Linear issue with findings"
+```
+
+### Debug & Fix
+```bash
+kimi "Read Linear issue SCR-123, find the bug in my repo via GitHub search_code, fix it"
+```
+
+---
+
 ## Yolo Mode (Autonomous Execution)
 
 Enable autonomous mode to skip confirmation prompts:
@@ -183,26 +205,6 @@ Enable autonomous mode to skip confirmation prompts:
 - Won't force-push or rewrite git history
 - Elevated privileges require confirmation
 - Production deployments are flagged
-
-## Usage Examples
-
-### Web Scraping Pipeline
-```bash
-kimi "Scrape https://example.com pricing with Firecrawl, 
-      handle anti-bot with Playwright if needed, 
-      save results to GitHub gist"
-```
-
-### Research to Linear
-```bash
-kimi "Research React 19 features via Perplexity,
-      summarize top 5, create Linear issue with findings"
-```
-
-### Debug & Fix
-```bash
-kimi "Read Linear issue SCR-123, find the bug in my repo via GitHub search_code, fix it"
-```
 
 ## Testing
 

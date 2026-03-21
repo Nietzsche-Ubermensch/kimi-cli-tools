@@ -44,6 +44,7 @@ class MCPTestSuite:
     
     async def test_perplexity(self) -> Dict[str, Any]:
         """Test Perplexity MCP server."""
+        # Simulated test - in real usage, this would call the MCP tool
         return {
             "latency_ms": 2300,
             "tools_available": ["perplexity_ask", "perplexity_research", "perplexity_reason"],
@@ -102,6 +103,7 @@ class MCPTestSuite:
     
     async def test_context7(self) -> Dict[str, Any]:
         """Test Context7 MCP server."""
+        # This will fail until API key is added
         raise Exception("CONTEXT7_API_KEY not configured")
     
     def generate_report(self) -> Dict[str, Any]:
@@ -122,7 +124,7 @@ class MCPTestSuite:
         }
     
     def _generate_recommendations(self) -> List[str]:
-        """Generate actionable recommendations."""
+        """Generate actionable recommendations based on test results."""
         recommendations = []
         
         if self.results.get("context7", {}).get("status") == "❌ FAIL":
@@ -178,6 +180,7 @@ async def main():
     report = await suite.test_all_servers()
     print_report(report)
     
+    # Save report to file
     output_file = f"mcp_test_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     with open(output_file, 'w') as f:
         json.dump(report, f, indent=2)

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Browser MCP Servers Test Suite"""
+"""
+Browser MCP Servers Test Suite
+Tests Chrome DevTools and Playwright MCP servers
+"""
 
 import asyncio
 import json
@@ -26,6 +29,7 @@ class BrowserServerTester:
         results = {}
         for test_name, description in tests:
             try:
+                # Simulated - actual implementation would call MCP tool
                 print(f"  ✅ {description}")
                 results[test_name] = "pass"
             except Exception as e:
@@ -49,6 +53,7 @@ class BrowserServerTester:
         results = {}
         for test_name, description in tests:
             try:
+                # Simulated - actual implementation would call MCP tool
                 print(f"  ✅ {description}")
                 results[test_name] = "pass"
             except Exception as e:
@@ -66,12 +71,14 @@ class BrowserServerTester:
         self.results["chrome_devtools"] = await self.test_chrome_devtools()
         self.results["playwright"] = await self.test_playwright()
         
+        # Generate report
         report = {
             "timestamp": datetime.now().isoformat(),
             "results": self.results,
             "summary": self._generate_summary()
         }
         
+        # Save report
         filename = f"browser_test_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         with open(filename, 'w') as f:
             json.dump(report, f, indent=2)

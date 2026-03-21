@@ -2,9 +2,9 @@
 
 ## Summary
 
-Generated: 3 skills for Kimi_CLI project  
+Generated: 4 skills for Kimi_CLI project  
 Platform: Python (Async OpenAI, MCP, Thermodynamic Execution)  
-Lines Generated: ~450  
+Lines Generated: ~600  
 
 ---
 
@@ -15,6 +15,7 @@ Lines Generated: ~450
 | python-async-mcp | 2 | `kimi_full_client.py`, `kimi_thermo/thermo_executor.py` |
 | kimi-thermodynamic | 2 | `kimi_thermo/thermo_executor.py`, `kimi_thermo/complete_cli.py` |
 | mcp-server-config | 3 | `mcp_config.json`, `config.toml`, `AGENTS.md` |
+| yolo-mode | 1 | User request for autonomous execution |
 
 ---
 
@@ -52,10 +53,22 @@ Lines Generated: ~450
   - `AGENTS.md` - Tool routing rules
 - **Output:** `.kimi/skills/mcp-server-config/SKILL.md` (130 lines)
 - **Key Patterns:**
-  - 7 MCP server configuration
+  - 8 MCP server configuration
   - Tool routing matrix
   - Execution chains (Scraper Build, Bug Fix)
   - Environment variable setup
+
+### 4. yolo-mode [CREATED]
+- **Analyzed:** User interaction patterns
+- **Sources:**
+  - User requests for "/yolo" command
+  - Autonomous execution workflows
+- **Output:** `.kimi/skills/yolo-mode/SKILL.md` (116 lines), `yolo.json`, `yolo_state.py`
+- **Key Patterns:**
+  - `/yolo` command activation
+  - Skip confirmation prompts
+  - Safety guardrails (always confirm list)
+  - Session state management
 
 ---
 
@@ -66,6 +79,7 @@ Lines Generated: ~450
 | python-async-mcp | ✓ | async, MCP, fiber, streaming | 6 | ✓ |
 | kimi-thermodynamic | ✓ | T*, thermodynamic, adaptive | 5 | ✓ |
 | mcp-server-config | ✓ | MCP, server, config, routing | 5 | ✓ |
+| yolo-mode | ✓ | /yolo, autonomous, confirmation | 5 | ✓ |
 
 ---
 
@@ -78,8 +92,12 @@ Lines Generated: ~450
 │   └── SKILL.md
 ├── kimi-thermodynamic/
 │   └── SKILL.md
-└── mcp-server-config/
-    └── SKILL.md
+├── mcp-server-config/
+│   └── SKILL.md
+└── yolo-mode/
+    ├── SKILL.md
+    ├── yolo.json
+    └── yolo_state.py
 ```
 
 ---
@@ -88,9 +106,10 @@ Lines Generated: ~450
 
 1. Add `.kimi/skills/` to `.gitignore` if skills are user-specific
 2. Or commit to repo for team sharing
-3. Update `AGENTS.md` with skills location reference
+3. Update `AGENTS.md` with skills location reference ✅ Done
 
 ---
 
 Generated: 2026-03-20  
-Command: skill-master generate
+Updated: 2026-03-20  
+Command: skill-master generate + manual addition
