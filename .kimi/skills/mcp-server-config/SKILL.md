@@ -1,0 +1,186 @@
+---
+name: mcp-server-config
+description: Model Context Protocol (MCP) server configuration for Kimi CLI. 7 servers: Firecrawl, Perplexity, Linear, GitHub, Brave, Chrome DevTools, Playwright.
+version: 1.0.0
+---
+
+# MCP Server Configuration
+
+## Overview
+
+Configure 7 MCP servers for Kimi CLI to enable web scraping, research, task management, code operations, search, and browser automation.
+
+## Server Matrix
+
+| Server | Package | Use Case | Env Var |
+|--------|---------|----------|---------|
+| 🔥 Firecrawl | `@mendableai/firecrawl-mcp-server` | Web scraping, data extraction | `FIRECRAWL_API_KEY` |
+| 🔍 Perplexity | `@modelcontextprotocol/server-perplexity` | Research, architecture | `PERPLEXITY_API_KEY` |
+| 📋 Linear | `@modelcontextprotocol/server-linear` | Issue tracking | `LINEAR_API_KEY` |
+| 🐙 GitHub | `@modelcontextprotocol/server-github` | Code, PRs, repos | `GITHUB_TOKEN` |
+| 🦁 Brave | `@modelcontextprotocol/server-brave-search` | URL discovery | `BRAVE_API_KEY` |
+| 🧪 Chrome DevTools | `@modelcontextprotocol/server-puppeteer` | Live DOM debugging | None |
+| 🎭 Playwright | `@executeautomation/playwright-mcp-server` | Browser automation | None |
+
+## Configuration File
+
+### mcp_config.json
+```json
+{
+  "mcpServers": {
+    "firecrawl": {
+      "command": "npx",
+      "args": ["-y", "@mendableai/firecrawl-mcp-server"],
+      "env": {
+        "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}"
+      }
+    },
+    "perplexity": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-perplexity"],
+      "env": {
+        "PERPLEXITY_API_KEY": "${PERPLEXITY_API_KEY}"
+      }
+    },
+    "linear": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-linear"],
+      "env": {
+        "LINEAR_API_KEY": "${LINEAR_API_KEY}"
+      }
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+      }
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@executeautomation/playwright-mcp-server"]
+    }
+  }
+}
+```
+
+## Environment Variables
+
+### .env
+```bash
+# MCP Server API Keys
+FIRECRAWL_API_KEY=fc-...
+PERPLEXITY_API_KEY=pplx-...
+LINEAR_API_KEY=lin_api_...
+GITHUB_TOKEN=ghp_...
+BRAVE_API_KEY=BSA...
+
+# LLM Provider Keys
+MOONSHOT_API_KEY=sk-...
+KIMI_API_KEY=sk-...
+```
+
+## Tool Routing Rules
+
+```
+RESEARCH      → Perplexity (architecture, docs, factual)
+FIND URL      → Brave Search only
+EXTRACT DATA  → Firecrawl (JSON/markdown, never HTML)
+AUTOMATE      → Playwright (headless, anti-bot)
+DEBUG LIVE    → Chrome DevTools (active tab)
+CODE OPS      → GitHub (search_code first!)
+TRACK WORK    → Linear (issues, bugs)
+```
+
+## Execution Chains
+
+### Scraper Build
+```
+1. Brave/Perplexity → Research target
+2. Playwright/Firecrawl → Test extraction
+3. Write code → Node/Python
+4. GitHub → Push & PR
+```
+
+### Bug Fix
+```
+1. Linear → Read issue
+2. GitHub → search_code for failing code
+3. Write fix
+4. GitHub → Create PR
+5. Linear → Update ticket
+```
+
+## System Prompt Integration
+
+```toml
+system_prompt = """You are an elite Scraping Engineer with 7 MCP tools.
+
+TOOL ROUTING (strict):
+• PERPLEXITY → Research, architecture, docs
+• BRAVE → Find URLs only  
+• FIRECRAWL → Data extraction (always JSON/markdown)
+• PLAYWRIGHT → Browser automation, anti-bot
+• CHROME DEVTOOLS → Live DOM debugging
+• GITHUB → search_code first, never full repos
+• LINEAR → Bug tracking, task management
+
+EXECUTION CHAINS:
+• SCRAPER: Research → Test → Code → Push
+• DEBUG: Issue → Search → Fix → PR → Update
+
+RULE: Be concise. Never dump raw HTML. Output code/JSON only."""
+```
+
+## Rules
+
+### Do
+- Use env var placeholders `${VAR}` in config
+- Route tools correctly (see matrix above)
+- Request `markdown` or `json` format from Firecrawl
+- Use `search_code` before reading files on GitHub
+- Be concise — don't dump raw HTML into chat
+
+### Don't
+- Hardcode API keys in JSON/TOML files
+- Use Brave for research (use Perplexity)
+- Use Firecrawl without format specification
+- Read entire GitHub repos blindly
+- Output raw HTML to conversation
+
+## Testing
+
+```bash
+# Test all 7 servers
+kimi "Research AI news via Perplexity, 
+      find URLs via Brave, 
+      scrape one with Firecrawl,
+      test Playwright on example.com,
+      search GitHub for 'playwright-mcp',
+      list Linear issues"
+```
+
+## File Location
+- `mcp_config.json` - Server definitions
+- `config.toml` - System prompt & tool routing
+- `.env` - API keys (gitignored)
+
+<!-- Generated by skill-master command
+Version: 1.0.0
+Sources:
+- mcp_config.json
+- config.toml
+- AGENTS.md
+Last updated: 2026-03-20
+-->

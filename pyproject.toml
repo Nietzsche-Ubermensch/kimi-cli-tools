@@ -1,0 +1,17 @@
+[project]
+name = "kimi-cli-tools"
+version = "1.0.0"
+description = "Kimi Full Client — All 15 tools, async fiber execution, multi-turn, vision, streaming"
+requires-python = ">=3.11"
+dependencies = [
+    "openai>=1.0",
+    "httpx>=0.25",
+]
+
+[project.optional-dependencies]
+toml = ["tomli>=2.0;python_version<'3.11'"]
+thermo = ["openai>=1.0", "httpx>=0.25"]
+
+[project.scripts]
+kimi = "kimi_full_client:_cli_entry"
+kimi-audit = "kimi_thermo.complete_cli:_cli_entry"
