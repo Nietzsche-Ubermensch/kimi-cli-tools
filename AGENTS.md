@@ -19,13 +19,13 @@ kimi "Research Playwright stealth with Perplexity, scrape HN top 3 headlines wit
 ┌─────────────────────────────────────────────────────┐
 │                    Kimi CLI                          │
 │  ┌──────────────┐  ┌──────────────┐  ┌───────────┐  │
-│  │   Kimi K2.5  │  │ 7 MCP Servers│  │ 15 Tools  │  │
+│  │   Kimi K2.5  │  │ 8 MCP Servers│  │ 15 Tools  │  │
 │  │  (256k ctx)  │  │              │  │           │  │
 │  └──────────────┘  └──────────────┘  └───────────┘  │
 └─────────────────────────────────────────────────────┘
 ```
 
-### MCP Servers (7)
+### MCP Servers (8)
 
 | Server | Use Case | Package |
 |--------|----------|---------|
@@ -36,6 +36,16 @@ kimi "Research Playwright stealth with Perplexity, scrape HN top 3 headlines wit
 | 🦁 **Brave** | URL discovery, quick search | `@modelcontextprotocol/server-brave-search` |
 | 🧪 **Chrome DevTools** | Live DOM debugging | `@modelcontextprotocol/server-puppeteer` |
 | 🎭 **Playwright** | Browser automation, anti-bot | `@executeautomation/playwright-mcp-server` |
+| 📚 **Context7** | Library documentation lookup | `@upstash/context7-mcp` |
+
+## Skills (Custom)
+
+| Skill | Location | Description |
+|-------|----------|-------------|
+| 🚀 **Yolo Mode** | `.kimi/skills/yolo-mode/` | Autonomous execution without confirmation prompts |
+| 🐍 **Python Async MCP** | `.kimi/skills/python-async-mcp/` | Async patterns for MCP clients |
+| 🌡️ **Thermodynamic** | `.kimi/skills/kimi-thermodynamic/` | T* adaptive execution framework |
+| ⚙️ **MCP Config** | `.kimi/skills/mcp-server-config/` | Server configuration patterns |
 
 ---
 
@@ -51,6 +61,8 @@ AUTOMATE     → Playwright (headless, anti-bot)
 DEBUG LIVE   → Chrome DevTools (active tab)
 CODE OPS     → GitHub (search_code first!)
 TRACK WORK   → Linear (issues, bugs)
+LIBRARY DOCS → Context7 (React, Next.js, etc.)
+YOLO MODE    → /yolo (autonomous execution)
 ```
 
 ### Execution Chains
@@ -145,6 +157,33 @@ DEEPSEEK_API_KEY=...
 
 ---
 
+## Yolo Mode (Autonomous Execution)
+
+Enable autonomous mode to skip confirmation prompts:
+
+```bash
+# Activate yolo mode
+/yolo
+
+# Check status
+/yolo status
+
+# Disable
+/yolo off
+```
+
+### When Active
+- Shell commands execute without confirmation
+- Files write without diff preview
+- Git commits/push proceed directly
+- MCP tools execute immediately
+
+### Safety Guardrails (Always Active)
+- Cannot access files outside working directory
+- Won't force-push or rewrite git history
+- Elevated privileges require confirmation
+- Production deployments are flagged
+
 ## Usage Examples
 
 ### Web Scraping Pipeline
@@ -165,16 +204,18 @@ kimi "Research React 19 features via Perplexity,
 kimi "Read Linear issue SCR-123, find the bug in my repo via GitHub search_code, fix it"
 ```
 
----
-
 ## Testing
 
 ```bash
-# Test all 7 MCP servers
+# Test all 8 MCP servers
 kimi "Use Perplexity to check if MCP servers are working, 
       then test Playwright on example.com,
       search for 'playwright-mcp' on GitHub,
       and list my Linear issues"
+
+# Test yolo mode
+/yolo
+kimi "Create a test file, commit it, and push to GitHub"
 ```
 
 ---
