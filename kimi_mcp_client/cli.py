@@ -8,9 +8,27 @@ import asyncio
 import argparse
 import json
 import sys
-from typing import List
+from typing import Dict, Any, List
 
 from .client import KimiMCPClient, get_client
+
+
+def _print_status(status: Dict[str, Any]) -> None:
+    """Print a server-status dict produced by initialize() or health_check()."""
+    print("\n" + "=" * 60)
+    print("SERVER STATUS")
+    print("=" * 60)
+    for name, info in status.items():
+        icon = "✅" if info.get("status") == "healthy" else "❌"
+        print(f"{icon} {name:20s} {info.get('status', 'unknown')}")
+        if "tools" in info:
+            tools = info["tools"]
+            if isinstance(tools, list):
+                print(f"   Tools: {', '.join(tools[:5])}{'...' if len(tools) > 5 else ''}")
+            else:
+                print(f"   Tools: {tools}")
+    healthy = sum(1 for s in status.values() if s.get("status") == "healthy")
+    print(f"\nTotal: {healthy}/{len(status)} servers healthy")
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -63,27 +81,8 @@ def create_parser() -> argparse.ArgumentParser:
 async def cmd_status(client: KimiMCPClient) -> int:
     """Execute status command."""
     print("🔍 Checking MCP server status...\n")
-    
     status = await client.initialize()
-    
-    print("\n" + "=" * 60)
-    print("SERVER STATUS")
-    print("=" * 60)
-    
-    for server, info in status.items():
-        icon = "✅" if info.get("status") == "healthy" else "❌"
-        print(f"{icon} {server:20s} {info.get('status', 'unknown')}")
-        
-        if "tools" in info:
-            tools = info["tools"]
-            if isinstance(tools, list):
-                print(f"   Tools: {', '.join(tools[:5])}{'...' if len(tools) > 5 else ''}")
-            else:
-                print(f"   Tools: {tools}")
-    
-    healthy = sum(1 for s in status.values() if s.get("status") == "healthy")
-    print("\n" + f"Total: {healthy}/{len(status)} servers healthy")
-    
+    _print_status(status)
     return 0
 
 
@@ -157,7 +156,13 @@ async def cmd_interactive(client: KimiMCPClient) -> int:
                 print("  exit       - Quit\n")
             
             elif cmd == "status":
-                await cmd_status(client)
+                # Call health_check() directly — avoids re-initializing the
+                # client (which would re-append to session.servers_used).
+                status = {
+                    name: await server.health_check()
+                    for name, server in client._servers.items()
+                }
+                _print_status(status)
             
             elif cmd == "session":
                 report = client.get_session_report()

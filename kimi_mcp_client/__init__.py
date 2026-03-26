@@ -19,6 +19,21 @@ from .servers import (
     Context7Server,
 )
 
+# LaborMarket and SubAgent
+from .soul.agent import LaborMarket, SubAgent
+
+# Tools
+from .tools.file_operations import FileManagerTool, Approval, Config, Runtime
+from .tools.code_analyzer import (
+    CodeAnalyzerTool,
+    AnalyzerApproval,
+    AnalyzerConfig,
+    AnalyzerRuntime,
+)
+
+# Agents
+from .agents.research_agent import ResearchOrchestrator
+
 __all__ = [
     "KimiMCPClient",
     "MCPWorkflows",
@@ -30,4 +45,13 @@ __all__ = [
     "ChromeDevToolsServer",
     "PlaywrightServer",
     "Context7Server",
+    # New components
+    "LaborMarket",
+    "SubAgent",
+    "FileManagerTool",
+    "CodeAnalyzerTool",
+    "AnalyzerApproval",
+    "AnalyzerConfig",
+    "AnalyzerRuntime",
+    "ResearchOrchestrator",
 ]

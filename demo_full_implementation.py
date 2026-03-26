@@ -5,7 +5,12 @@ Demonstrates real usage of all 8 MCP servers
 """
 
 import asyncio
+import os
 from kimi_mcp_client import KimiMCPClient
+
+# Get demo configuration from environment
+DEMO_LINEAR_TEAM_ID = os.environ.get("DEMO_LINEAR_TEAM_ID", "your-team-id-here")
+DEMO_GITHUB_REPO = os.environ.get("DEMO_GITHUB_REPO", "owner/repo")
 
 
 async def demo_basic_usage():
@@ -71,7 +76,7 @@ async def demo_linear(client: KimiMCPClient):
     issue = await client.linear.create_issue(
         title="MCP Client Demo Issue",
         description="This issue was created via the Kimi MCP Client",
-        team_id="2d851660-3f0d-4be2-9555-dcbaf55bf8fa",
+        team_id=DEMO_LINEAR_TEAM_ID,
         priority=3
     )
     print(f"✅ Created: {issue['identifier']}")
@@ -94,8 +99,8 @@ async def demo_github(client: KimiMCPClient):
     # Create PR
     print("\n📦 Creating PR...")
     pr = await client.github.create_pull_request(
-        owner="Nietzsche-Ubermensch",
-        repo="kimi-cli-tools",
+        owner=DEMO_GITHUB_REPO.split("/")[0] if "/" in DEMO_GITHUB_REPO else "owner",
+        repo=DEMO_GITHUB_REPO.split("/")[1] if "/" in DEMO_GITHUB_REPO else "repo",
         title="Demo: MCP Client Integration",
         head="feature/demo",
         base="main",
@@ -107,8 +112,8 @@ async def demo_github(client: KimiMCPClient):
     # Push files
     print("\n📤 Pushing files...")
     commit = await client.github.push_files(
-        owner="Nietzsche-Ubermensch",
-        repo="kimi-cli-tools",
+        owner=DEMO_GITHUB_REPO.split("/")[0] if "/" in DEMO_GITHUB_REPO else "owner",
+        repo=DEMO_GITHUB_REPO.split("/")[1] if "/" in DEMO_GITHUB_REPO else "repo",
         branch="main",
         files=[
             {"path": "demo/file1.txt", "content": "Hello from MCP"},
@@ -241,7 +246,7 @@ async def demo_workflows(client: KimiMCPClient):
     print("-" * 70)
     result = await client.workflows.research_to_linear(
         topic="React Server Components",
-        team_id="2d851660-3f0d-4be2-9555-dcbaf55bf8fa"
+        team_id=DEMO_LINEAR_TEAM_ID
     )
     print(f"✅ Created issue: {result['issue']['identifier']}")
     

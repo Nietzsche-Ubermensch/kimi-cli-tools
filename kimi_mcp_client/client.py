@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from .servers import *
+from .workflows import MCPWorkflows
 
 
 @dataclass
@@ -66,24 +67,49 @@ class KimiMCPClient:
         # Load configuration
         self._config = self._load_config()
         
-        # Initialize all servers
+        # Initialize all servers (idempotent — skip already-initialised ones)
         status = {}
+        servers_config = self._config.get("mcpServers", {})
         for name, server_class in self._server_registry().items():
             try:
-                server = server_class(self._config.get("mcpServers", {}).get(name, {}))
-                self._servers[name] = server
-                status[name] = await server.health_check()
-                self.session.servers_used.append(name)
+                if name not in self._servers:
+                    self._servers[name] = server_class(servers_config.get(name, {}))
+                    self.session.servers_used.append(name)
+                status[name] = await self._servers[name].health_check()
             except Exception as e:
                 status[name] = {"status": "error", "error": str(e)}
         
-        print(f"✅ Initialized {len(self._servers)} servers")
+        # Print status summary
+        healthy = sum(1 for s in status.values() if s.get("status") == "healthy")
+        print(f"✅ Initialized {len(self._servers)} servers ({healthy} healthy)")
+        
+        for name, s in status.items():
+            icon = "🟢" if s.get("status") == "healthy" else "🟡" if s.get("status") == "unconfigured" else "🔴"
+            print(f"   {icon} {name}: {s.get('status', 'unknown')}")
+        
         return status
     
     def _load_config(self) -> Dict:
-        """Load MCP configuration from JSON file."""
-        with open(self.config_path) as f:
-            return json.load(f)
+        """Load MCP configuration from JSON file.
+
+        Falls back to an empty config dict when the file is absent so that
+        servers relying solely on environment variables still initialise.
+        """
+        if not os.path.exists(self.config_path):
+            import warnings
+            warnings.warn(
+                f"Config file '{self.config_path}' not found. "
+                "Servers will use environment variables only.",
+                stacklevel=3
+            )
+            return {"mcpServers": {}}
+        try:
+            with open(self.config_path) as f:
+                return json.load(f)
+        except json.JSONDecodeError as exc:
+            raise ValueError(
+                f"Invalid JSON in config file '{self.config_path}': {exc}"
+            ) from exc
     
     def _server_registry(self) -> Dict[str, Any]:
         """Registry of all MCP servers."""
@@ -91,9 +117,9 @@ class KimiMCPClient:
             "perplexity": PerplexityServer,
             "linear": LinearServer,
             "github": GitHubServer,
-            "brave-search": BraveSearchServer,
+            "brave": BraveSearchServer,
             "firecrawl": FirecrawlServer,
-            "chrome-devtools": ChromeDevToolsServer,
+            "chrome": ChromeDevToolsServer,
             "playwright": PlaywrightServer,
             "context7": Context7Server,
         }
@@ -117,7 +143,7 @@ class KimiMCPClient:
     @property
     def brave(self) -> BraveSearchServer:
         """Access Brave Search server."""
-        return self._servers.get("brave-search")
+        return self._servers.get("brave")
     
     @property
     def firecrawl(self) -> FirecrawlServer:
@@ -127,7 +153,7 @@ class KimiMCPClient:
     @property
     def chrome(self) -> ChromeDevToolsServer:
         """Access Chrome DevTools server."""
-        return self._servers.get("chrome-devtools")
+        return self._servers.get("chrome")
     
     @property
     def playwright(self) -> PlaywrightServer:
@@ -160,20 +186,39 @@ class KimiMCPClient:
         """Get current session statistics."""
         return {
             "started_at": self.session.started_at.isoformat(),
-            "duration_seconds": (datetime.now() - self.session.started_at).seconds,
+            # BUG-003 FIX: .seconds gives only the seconds component (0-59);
+            # .total_seconds() gives the full elapsed duration.
+            "duration_seconds": (datetime.now() - self.session.started_at).total_seconds(),
             "servers_used": self.session.servers_used,
             "actions_taken": self.session.actions_taken,
             "yolo_mode": self.session.yolo_mode
         }
+    
+    async def close(self):
+        """Close all server connections."""
+        for name, server in self._servers.items():
+            try:
+                await server.close()
+            except Exception as e:
+                print(f"Warning: Error closing {name}: {e}")
 
 
 # Global client instance (singleton pattern)
 _client_instance: Optional[KimiMCPClient] = None
 
 
-def get_client(yolo_mode: bool = False) -> KimiMCPClient:
-    """Get or create global MCP client instance."""
+def get_client(yolo_mode: bool = False, config_path: str = "mcp_config.json") -> KimiMCPClient:
+    """Get or create global MCP client instance.
+
+    A new instance is created whenever yolo_mode or config_path differs from
+    the existing singleton so callers always get a client matching their
+    requested configuration.
+    """
     global _client_instance
-    if _client_instance is None:
-        _client_instance = KimiMCPClient(yolo_mode=yolo_mode)
+    if (
+        _client_instance is None
+        or _client_instance.yolo_mode != yolo_mode
+        or _client_instance.config_path != config_path
+    ):
+        _client_instance = KimiMCPClient(yolo_mode=yolo_mode, config_path=config_path)
     return _client_instance

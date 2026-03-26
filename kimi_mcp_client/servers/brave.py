@@ -1,88 +1,100 @@
-"""
-Brave Search MCP Server Implementation
-Privacy-focused web search
-"""
+"""Brave Search MCP server — privacy-focused web search via Brave Search API."""
+
+from __future__ import annotations
 
 import os
-from typing import Dict, Any, List
+from typing import Any
+
 from .base import BaseMCPServer
 
 
 class BraveSearchServer(BaseMCPServer):
+    """Brave Search for web discovery.
+
+    Tools: web_search, image_search, video_search, news_search
     """
-    Brave Search for web discovery.
-    
-    Tools:
-        - web_search: General web search
-        - image_search: Image search
-        - video_search: Video search
-        - news_search: News articles
-    """
-    
-    def __init__(self, config: Dict[str, Any]):
+
+    _BASE_URL = "https://api.search.brave.com/res/v1"
+    _TOOLS = ["web_search", "image_search", "video_search", "news_search"]
+
+    def __init__(self, config: dict[str, Any]) -> None:
         super().__init__(config)
-        self.api_key = os.environ.get("BRAVE_API_KEY")
-        self.base_url = "https://api.search.brave.com/res/v1"
-    
-    async def health_check(self) -> Dict[str, Any]:
-        """Verify Brave Search API access."""
+        self.api_key: str | None = (
+            config.get("env", {}).get("BRAVE_API_KEY")
+            or os.environ.get("BRAVE_API_KEY")
+        )
+
+    def _headers(self) -> dict[str, str]:
+        return {
+            "Accept": "application/json",
+            "X-Subscription-Token": self.api_key or "",
+        }
+
+    def _require_key(self) -> None:
+        if not self.api_key:
+            raise ValueError("BRAVE_API_KEY is not configured")
+
+    async def health_check(self) -> dict[str, Any]:
         if not self.api_key:
             return {"status": "error", "error": "BRAVE_API_KEY not set"}
-        
-        return {
-            "status": "healthy",
-            "api_key": f"{self.api_key[:8]}..." if self.api_key else None,
-            "tools": ["web_search", "image_search", "video_search", "news_search"]
-        }
-    
+        try:
+            session = await self._get_session()
+            async with session.get(
+                f"{self._BASE_URL}/web/search",
+                headers=self._headers(),
+                params={"q": "test", "count": 1},
+            ) as resp:
+                if resp.status == 200:
+                    return {"status": "healthy", "api_key": f"{self.api_key[:8]}…", "tools": self._TOOLS}
+                return {"status": "error", "error": f"HTTP {resp.status}"}
+        except Exception as exc:
+            return {"status": "error", "error": str(exc)}
+
     async def web_search(
         self,
         query: str,
         count: int = 10,
         offset: int = 0,
-        freshness: str = None
-    ) -> Dict[str, Any]:
-        """
-        Search the web.
-        
-        Args:
-            query: Search query
-            count: Number of results (1-20)
-            offset: Pagination offset
-            freshness: pd/pw/pm/py for recency filtering
-            
-        Returns:
-            Search results with URLs and snippets
-        """
+        freshness: str | None = None,
+    ) -> dict[str, Any]:
+        """Search the web. freshness: pd/pw/pm/py for recency filtering."""
+        self._require_key()
         self._track_request()
-        
-        return {
-            "query": query,
-            "results": [
-                {
-                    "title": f"Result {i} for {query}",
-                    "url": f"https://example.com/result{i}",
-                    "description": f"Description for result {i}"
-                }
-                for i in range(min(count, 5))
-            ],
-            "total": count
-        }
-    
-    async def image_search(
-        self,
-        query: str,
-        count: int = 50
-    ) -> List[Dict[str, Any]]:
+        params: dict[str, Any] = {"q": query, "count": min(max(count, 1), 20), "offset": offset}
+        if freshness:
+            params["freshness"] = freshness
+        session = await self._get_session()
+        async with session.get(f"{self._BASE_URL}/web/search", headers=self._headers(), params=params) as resp:
+            if resp.status == 200:
+                return await resp.json()
+            raise RuntimeError(f"Brave web search failed: HTTP {resp.status} — {await resp.text()}")
+
+    async def image_search(self, query: str, count: int = 50) -> list[dict[str, Any]]:
         """Search for images."""
+        self._require_key()
         self._track_request()
-        return []
-    
-    async def news_search(
-        self,
-        query: str,
-        freshness: str = "pd"
-    ) -> List[Dict[str, Any]]:
-        """Search news articles."""
+        session = await self._get_session()
+        async with session.get(f"{self._BASE_URL}/images/search", headers=self._headers(), params={"q": query, "count": min(count, 100)}) as resp:
+            if resp.status == 200:
+                return (await resp.json()).get("results", [])
+            raise RuntimeError(f"Brave image search failed: HTTP {resp.status} — {await resp.text()}")
+
+    async def news_search(self, query: str, count: int = 20, freshness: str = "pd") -> list[dict[str, Any]]:
+        """Search recent news articles."""
+        self._require_key()
         self._track_request()
-        return []
+        session = await self._get_session()
+        async with session.get(f"{self._BASE_URL}/news/search", headers=self._headers(), params={"q": query, "count": min(count, 50), "freshness": freshness}) as resp:
+            if resp.status == 200:
+                return (await resp.json()).get("results", [])
+            raise RuntimeError(f"Brave news search failed: HTTP {resp.status} — {await resp.text()}")
+
+    async def video_search(self, query: str, count: int = 20) -> list[dict[str, Any]]:
+        """Search for videos."""
+        self._require_key()
+        self._track_request()
+        session = await self._get_session()
+        async with session.get(f"{self._BASE_URL}/videos/search", headers=self._headers(), params={"q": query, "count": min(count, 50)}) as resp:
+            if resp.status == 200:
+                return (await resp.json()).get("results", [])
+            raise RuntimeError(f"Brave video search failed: HTTP {resp.status} — {await resp.text()}")

@@ -1,194 +1,63 @@
-"""
-Playwright MCP Server Implementation
-Cross-browser automation and testing
+"""Playwright MCP server stub.
+
+Full Playwright browser automation requires the external MCP server:
+    npx -y @executeautomation/playwright-mcp-server
+
+This stub surfaces correct health-check status and delegates all actual
+automation to either the real Playwright MCP server (if configured) or
+the Firecrawl server for content extraction.
 """
 
-from typing import Dict, Any, List, Optional
+from __future__ import annotations
+
+from typing import Any
+
 from .base import BaseMCPServer
+
+_SETUP_CMD = "npx -y @executeautomation/playwright-mcp-server"
+_TOOLS = ["new_page", "goto", "click", "fill", "screenshot", "get_by_role", "expect"]
+_NOTE = f"Full automation requires the Playwright MCP server: {_SETUP_CMD}"
 
 
 class PlaywrightServer(BaseMCPServer):
-    """
-    Playwright for cross-browser automation.
-    
-    Tools:
-        - new_page: Create new browser page
-        - goto: Navigate to URL
-        - click: Click element
-        - fill: Fill input
-        - screenshot: Capture screenshot
-        - get_by_role: Find element by ARIA role
-        - expect: Assert conditions
-    """
-    
-    def __init__(self, config: Dict[str, Any]):
+    """Playwright for cross-browser automation (stub — see module docstring)."""
+
+    def __init__(self, config: dict[str, Any]) -> None:
         super().__init__(config)
         self.browsers = ["chromium", "firefox", "webkit"]
-        self.active_contexts: List[str] = []
-    
-    async def health_check(self) -> Dict[str, Any]:
-        """Check Playwright availability."""
+
+    async def health_check(self) -> dict[str, Any]:
         return {
-            "status": "healthy",
+            "status": "unconfigured",
+            "message": _NOTE,
             "browsers": self.browsers,
-            "active_contexts": len(self.active_contexts),
-            "tools": [
-                "new_page", "goto", "click", "fill",
-                "screenshot", "get_by_role", "expect"
-            ]
+            "tools": _TOOLS,
         }
-    
-    async def new_page(
-        self,
-        browser: str = "chromium",
-        headless: bool = True
-    ) -> Dict[str, Any]:
-        """
-        Create a new browser page.
-        
-        Args:
-            browser: chromium/firefox/webkit
-            headless: Run without visible UI
-            
-        Returns:
-            Page reference
-        """
+
+    async def new_page(self, browser: str = "chromium", headless: bool = True) -> dict[str, Any]:
         self._track_request()
-        
-        page_id = f"page_{self.request_count}"
-        return {
-            "page_id": page_id,
-            "browser": browser,
-            "headless": headless,
-            "url": "about:blank"
-        }
-    
-    async def goto(
-        self,
-        page_id: str,
-        url: str,
-        wait_until: str = "networkidle"
-    ) -> Dict[str, Any]:
-        """
-        Navigate to URL.
-        
-        Args:
-            page_id: Page identifier
-            url: URL to navigate to
-            wait_until: load/domcontentloaded/networkidle
-            
-        Returns:
-            Navigation result
-        """
+        return {"page_id": f"page_{self.request_count}", "browser": browser, "headless": headless, "note": _NOTE}
+
+    async def goto(self, page_id: str, url: str, wait_until: str = "networkidle") -> dict[str, Any]:
         self._track_request()
-        
-        return {
-            "page_id": page_id,
-            "url": url,
-            "status": 200,
-            "title": "Page Title"
-        }
-    
-    async def click(
-        self,
-        page_id: str,
-        selector: str
-    ) -> Dict[str, Any]:
-        """
-        Click element by selector.
-        
-        Args:
-            page_id: Page identifier
-            selector: Element selector
-            
-        Returns:
-            Click result
-        """
+        return {"page_id": page_id, "url": url, "note": "Use firecrawl.scrape for content extraction."}
+
+    async def click(self, page_id: str, selector: str) -> dict[str, Any]:
         self._track_request()
-        return {"clicked": True, "selector": selector}
-    
-    async def fill(
-        self,
-        page_id: str,
-        selector: str,
-        value: str
-    ) -> Dict[str, Any]:
-        """
-        Fill form input.
-        
-        Args:
-            page_id: Page identifier
-            selector: Input selector
-            value: Value to fill
-            
-        Returns:
-            Fill result
-        """
+        return {"clicked": False, "selector": selector, "note": _NOTE}
+
+    async def fill(self, page_id: str, selector: str, value: str) -> dict[str, Any]:
         self._track_request()
-        return {"filled": True, "selector": selector}
-    
-    async def screenshot(
-        self,
-        page_id: str,
-        path: str = None,
-        full_page: bool = False
-    ) -> Dict[str, Any]:
-        """
-        Capture screenshot.
-        
-        Args:
-            page_id: Page identifier
-            path: Save path
-            full_page: Capture full page
-            
-        Returns:
-            Screenshot info
-        """
+        return {"filled": False, "selector": selector, "note": _NOTE}
+
+    async def screenshot(self, page_id: str, path: str | None = None, full_page: bool = False) -> dict[str, Any]:
         self._track_request()
-        return {
-            "page_id": page_id,
-            "path": path,
-            "full_page": full_page
-        }
-    
-    async def get_by_role(
-        self,
-        page_id: str,
-        role: str,
-        name: str = None
-    ) -> Dict[str, Any]:
-        """
-        Find element by ARIA role.
-        
-        Args:
-            page_id: Page identifier
-            role: ARIA role (button, link, etc.)
-            name: Accessible name
-            
-        Returns:
-            Element reference
-        """
+        return {"page_id": page_id, "path": path, "full_page": full_page, "note": "Use firecrawl.scrape with screenshot format."}
+
+    async def get_by_role(self, page_id: str, role: str, name: str | None = None) -> dict[str, Any]:
         self._track_request()
-        return {"role": role, "name": name, "found": True}
-    
-    async def expect(
-        self,
-        page_id: str,
-        selector: str,
-        condition: str,
-        timeout: int = 5000
-    ) -> Dict[str, Any]:
-        """
-        Assert element condition.
-        
-        Args:
-            page_id: Page identifier
-            selector: Element selector
-            condition: to_be_visible, to_have_text, etc.
-            timeout: Wait timeout in ms
-            
-        Returns:
-            Assertion result
-        """
+        return {"role": role, "name": name, "found": False, "note": _NOTE}
+
+    async def expect(self, page_id: str, selector: str, condition: str, timeout: int = 5000) -> dict[str, Any]:
         self._track_request()
-        return {"pass": True, "condition": condition}
+        return {"pass": False, "condition": condition, "note": _NOTE}

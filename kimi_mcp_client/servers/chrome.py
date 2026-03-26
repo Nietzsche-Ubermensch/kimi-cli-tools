@@ -6,8 +6,9 @@ Provides real browser automation including navigation, screenshots,
 form interaction, and JavaScript execution through Firecrawl's cloud browser.
 """
 
-import os
+import os  # BUG-013 FIX: was missing; required for os.path.getsize/abspath
 import asyncio
+import aiohttp
 from typing import Dict, Any, List, Optional, Callable
 from datetime import datetime, timedelta
 from functools import wraps
@@ -126,6 +127,7 @@ class ChromeDevToolsServer(BaseMCPServer):
             exceptions=(Exception,)
         )
         async def _request():
+            # BUG-012 FIX: aiohttp requires ClientTimeout, not a plain int.
             async with session.post(
                 f"{self.base_url}{endpoint}",
                 headers={
@@ -133,7 +135,7 @@ class ChromeDevToolsServer(BaseMCPServer):
                     "Content-Type": "application/json"
                 },
                 json=payload,
-                timeout=self.timeout
+                timeout=aiohttp.ClientTimeout(total=self.timeout)
             ) as resp:
                 data = await resp.json()
                 
@@ -263,7 +265,7 @@ class ChromeDevToolsServer(BaseMCPServer):
                 if file_path:
                     # Download screenshot from URL
                     session = await self._get_session()
-                    async with session.get(screenshot_url, timeout=self.timeout) as img_resp:
+                    async with session.get(screenshot_url, timeout=aiohttp.ClientTimeout(total=self.timeout)) as img_resp:
                         if img_resp.status == 200:
                             img_data = await img_resp.read()
                             with open(file_path, 'wb') as f:

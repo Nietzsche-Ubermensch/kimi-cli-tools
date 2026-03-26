@@ -1,0 +1,55 @@
+{
+  "_comment": "Copy this file to mcp_config.json and replace environment variables with your actual API keys",
+  "mcpServers": {
+    "firecrawl": {
+      "command": "npx",
+      "args": ["-y", "@mendableai/firecrawl-mcp-server"],
+      "env": {
+        "FIRECRAWL_API_KEY": "your-firecrawl-api-key-here"
+      }
+    },
+    "perplexity": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-perplexity"],
+      "env": {
+        "PERPLEXITY_API_KEY": "your-perplexity-api-key-here"
+      }
+    },
+    "linear": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-linear"],
+      "env": {
+        "LINEAR_API_KEY": "your-linear-api-key-here"
+      }
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_TOKEN": "your-github-token-here"
+      }
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": "your-brave-api-key-here"
+      }
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+    },
+    "playwright": {
+      "command": "python",
+      "args": ["kimi_mcp_playwright_server.py"]
+    },
+    "fetch": {
+      "type": "streamable_http",
+      "url": "https://mcp.api-inference.modelscope.net/YOUR_ENDPOINT/mcp",
+      "headers": {
+        "Authorization": "Bearer your-modelscope-api-key-here"
+      }
+    }
+  }
+}

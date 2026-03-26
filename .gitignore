@@ -1,6 +1,9 @@
 # Environment variables (secrets)
 .env
 
+# MCP Configuration (contains API keys)
+mcp_config.json
+
 # Python cache
 __pycache__/
 *.py[cod]

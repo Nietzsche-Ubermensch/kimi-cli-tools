@@ -93,8 +93,9 @@ class MCPWorkflows:
         print(f"   Repo: {repo}")
         
         # Step 1: Get issue details
+        # BUG-004 FIX: was a hardcoded stub — now actually fetches from Linear.
         print("   Step 1/5: Reading Linear issue...")
-        issue = {"id": issue_id, "title": "Bug", "description": "Description"}
+        issue = await self.client.linear.get_issue(issue_id)
         
         # Step 2: Search codebase
         print("   Step 2/5: Searching GitHub code...")
@@ -173,8 +174,14 @@ class MCPWorkflows:
         competitors = search_results.get("results", [])[:num_competitors]
         scraped = []
         for comp in competitors:
+            # BUG-005 FIX: Brave Search returns results under "web.results";
+            # each result uses "url" but fall back to "link" defensively.
+            # Skip entries where no URL can be determined.
+            comp_url = comp.get("url") or comp.get("link")
+            if not comp_url:
+                continue
             page = await self.client.firecrawl.scrape(
-                url=comp.get("url"),
+                url=comp_url,
                 formats=["markdown"]
             )
             scraped.append(page)
@@ -249,13 +256,22 @@ class MCPWorkflows:
         
         # Step 4: Push to GitHub
         print("   Step 4/4: Pushing to GitHub...")
-        owner, repo = output_repo.split("/")
+        # BUG-006 FIX: split("/") on a URL without "://" raises IndexError[1].
+        # Use urllib.parse for robust URL decomposition.
+        from urllib.parse import urlparse
+        parsed = urlparse(target_url if "://" in target_url else f"https://{target_url}")
+        safe_name = (parsed.netloc + parsed.path).replace("/", "_").strip("_") or "unknown"
+
+        if "/" not in output_repo:
+            raise ValueError(f"output_repo must be 'owner/repo', got: {output_repo!r}")
+        owner, repo = output_repo.split("/", 1)
+
         commit = await self.client.github.push_files(
             owner=owner,
             repo=repo,
             branch=branch,
             files=[{
-                "path": f"scrapers/{target_url.split('//')[1].replace('/', '_')}.py",
+                "path": f"scrapers/{safe_name}.py",
                 "content": scraper_code
             }],
             message=f"Add scraper for {target_url}"
@@ -273,7 +289,10 @@ class MCPWorkflows:
     
     def _generate_scraper_code(self, url: str) -> str:
         """Generate Python scraper code."""
-        domain = url.split("//")[1].split("/")[0].replace(".", "_")
+        # BUG-007 FIX: same split("//")[1] IndexError as BUG-006.
+        from urllib.parse import urlparse
+        parsed = urlparse(url if "://" in url else f"https://{url}")
+        domain = (parsed.netloc or url).replace(".", "_").replace("-", "_")
         
         return f'''#!/usr/bin/env python3
 """

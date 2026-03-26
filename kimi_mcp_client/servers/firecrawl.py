@@ -1,139 +1,147 @@
-"""
-Firecrawl MCP Server Implementation
-Web scraping and data extraction
-"""
+"""Firecrawl MCP server — web scraping and data extraction via Firecrawl API."""
+
+from __future__ import annotations
 
 import os
-from typing import Dict, Any, List, Optional
+from typing import Any
+
 from .base import BaseMCPServer
 
 
 class FirecrawlServer(BaseMCPServer):
+    """Firecrawl for web scraping.
+
+    Tools: scrape, crawl, extract, map, search
     """
-    Firecrawl for web scraping.
-    
-    Tools:
-        - scrape: Single page extraction
-        - crawl: Multi-page crawling
-        - extract: Structured data extraction
-        - map: Site URL discovery
-        - search: Web search with extraction
-    """
-    
-    def __init__(self, config: Dict[str, Any]):
+
+    _BASE_URL = "https://api.firecrawl.dev/v1"
+    _TOOLS = ["scrape", "crawl", "extract", "map", "search"]
+
+    def __init__(self, config: dict[str, Any]) -> None:
         super().__init__(config)
-        self.api_key = os.environ.get("FIRECRAWL_API_KEY")
-        self.base_url = "https://api.firecrawl.dev/v1"
-    
-    async def health_check(self) -> Dict[str, Any]:
-        """Verify Firecrawl API access."""
+        self.api_key: str | None = (
+            config.get("env", {}).get("FIRECRAWL_API_KEY")
+            or os.environ.get("FIRECRAWL_API_KEY")
+        )
+
+    def _auth_headers(self) -> dict[str, str]:
+        return {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+
+    def _require_key(self) -> None:
+        if not self.api_key:
+            raise ValueError("FIRECRAWL_API_KEY is not configured")
+
+    async def health_check(self) -> dict[str, Any]:
         if not self.api_key:
             return {"status": "error", "error": "FIRECRAWL_API_KEY not set"}
-        
-        return {
-            "status": "healthy",
-            "api_key": f"{self.api_key[:8]}..." if self.api_key else None,
-            "tools": ["scrape", "crawl", "extract", "map", "search"]
-        }
-    
+        try:
+            session = await self._get_session()
+            async with session.post(
+                f"{self._BASE_URL}/scrape",
+                headers=self._auth_headers(),
+                json={"url": "https://example.com", "formats": ["markdown"]},
+            ) as resp:
+                if resp.status in (200, 400):
+                    # 400 means the key is valid but the URL/params were rejected
+                    return {"status": "healthy", "api_key": f"{self.api_key[:8]}…", "tools": self._TOOLS}
+                if resp.status == 401:
+                    return {"status": "error", "error": "Invalid API key"}
+                return {"status": "error", "error": f"HTTP {resp.status}"}
+        except Exception as exc:
+            return {"status": "error", "error": str(exc)}
+
     async def scrape(
         self,
         url: str,
-        formats: List[str] = None,
+        formats: list[str] | None = None,
         only_main_content: bool = True,
-        wait_for: int = 0
-    ) -> Dict[str, Any]:
-        """
-        Scrape a single page.
-        
-        Args:
-            url: Page URL to scrape
-            formats: Output formats [markdown, html, json]
-            only_main_content: Extract main content only
-            wait_for: Milliseconds to wait for JS rendering
-            
-        Returns:
-            Scraped content in requested formats
-        """
+        wait_for: int = 0,
+    ) -> dict[str, Any]:
+        """Scrape a single page."""
+        self._require_key()
         self._track_request()
-        
-        formats = formats or ["markdown"]
-        
-        return {
+        payload: dict[str, Any] = {
             "url": url,
-            "formats": formats,
-            "content": {
-                fmt: f"Content in {fmt} format" for fmt in formats
-            },
-            "metadata": {
-                "title": "Page Title",
-                "description": "Page description",
-                "source_url": url
-            }
+            "formats": formats or ["markdown"],
+            "onlyMainContent": only_main_content,
         }
-    
+        if wait_for > 0:
+            payload["waitFor"] = wait_for
+        session = await self._get_session()
+        async with session.post(f"{self._BASE_URL}/scrape", headers=self._auth_headers(), json=payload) as resp:
+            if resp.status == 200:
+                return await resp.json()
+            raise RuntimeError(f"Firecrawl scrape failed: HTTP {resp.status} — {await resp.text()}")
+
     async def extract(
         self,
-        urls: List[str],
+        urls: list[str],
         prompt: str,
-        schema: Dict[str, Any] = None
-    ) -> List[Dict[str, Any]]:
-        """
-        Extract structured data from URLs.
-        
-        Args:
-            urls: List of URLs to extract from
-            prompt: Extraction instructions
-            schema: JSON schema for structured output
-            
-        Returns:
-            Extracted data matching schema
-        """
+        schema: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Extract structured data from a list of URLs."""
+        self._require_key()
         self._track_request()
-        
-        return [
-            {
-                "url": url,
-                "data": {}
-            }
-            for url in urls
-        ]
-    
-    async def map(self, url: str, search: str = None) -> List[str]:
-        """
-        Map/discover URLs on a website.
-        
-        Args:
-            url: Base URL to map
-            search: Optional search term to filter URLs
-            
-        Returns:
-            List of discovered URLs
-        """
+        payload: dict[str, Any] = {"urls": urls, "prompt": prompt}
+        if schema:
+            payload["schema"] = schema
+        session = await self._get_session()
+        async with session.post(f"{self._BASE_URL}/extract", headers=self._auth_headers(), json=payload) as resp:
+            if resp.status == 200:
+                return (await resp.json()).get("data", [])
+            raise RuntimeError(f"Firecrawl extract failed: HTTP {resp.status} — {await resp.text()}")
+
+    async def map(self, url: str, search: str | None = None, limit: int = 100) -> list[str]:
+        """Discover URLs on a website."""
+        self._require_key()
         self._track_request()
-        return []
-    
+        params: dict[str, Any] = {"url": url, "limit": limit}
+        if search:
+            params["search"] = search
+        session = await self._get_session()
+        # Firecrawl /map uses POST, not GET
+        async with session.post(f"{self._BASE_URL}/map", headers=self._auth_headers(), json=params) as resp:
+            if resp.status == 200:
+                return (await resp.json()).get("links", [])
+            raise RuntimeError(f"Firecrawl map failed: HTTP {resp.status} — {await resp.text()}")
+
     async def crawl(
         self,
         url: str,
         limit: int = 10,
-        max_depth: int = 2
-    ) -> Dict[str, Any]:
-        """
-        Crawl multiple pages from a starting URL.
-        
-        Args:
-            url: Starting URL
-            limit: Max pages to crawl
-            max_depth: Crawl depth
-            
-        Returns:
-            Crawled pages content
-        """
+        max_depth: int = 2,
+        formats: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Crawl multiple pages from a starting URL."""
+        self._require_key()
         self._track_request()
-        
-        return {
-            "start_url": url,
-            "pages_crawled": 0,
-            "pages": []
+        payload: dict[str, Any] = {
+            "url": url,
+            "limit": limit,
+            "maxDepth": max_depth,
+            "formats": formats or ["markdown"],
         }
+        session = await self._get_session()
+        async with session.post(f"{self._BASE_URL}/crawl", headers=self._auth_headers(), json=payload) as resp:
+            if resp.status == 200:
+                return await resp.json()
+            raise RuntimeError(f"Firecrawl crawl failed: HTTP {resp.status} — {await resp.text()}")
+
+    async def search(
+        self,
+        query: str,
+        limit: int = 5,
+        formats: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Search the web and extract content."""
+        self._require_key()
+        self._track_request()
+        payload: dict[str, Any] = {"query": query, "limit": limit, "formats": formats or ["markdown"]}
+        session = await self._get_session()
+        async with session.post(f"{self._BASE_URL}/search", headers=self._auth_headers(), json=payload) as resp:
+            if resp.status == 200:
+                return await resp.json()
+            raise RuntimeError(f"Firecrawl search failed: HTTP {resp.status} — {await resp.text()}")

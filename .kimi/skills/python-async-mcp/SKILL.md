@@ -89,13 +89,23 @@ class FiberExecutor:
             return ctx.get("output", str(ctx))
         
         return f"Error: {fiber.get('error', 'Unknown')}"
+    
+    async def aclose(self):
+        """Close HTTP client."""
+        await self.http.aclose()
 ```
 
 ### 3. Session Manager
 ```python
 class KimiSession:
+    """Async session with tool execution and streaming."""
+    
+    MAX_TOOL_ROUNDS = 5
+    
     def __init__(
         self,
+        api_key: str,
+        base_url: str,
         model: str = "kimi-for-coding",
         system_prompt: str = "You are Kimi...",
         max_history: int = 40,
@@ -105,12 +115,37 @@ class KimiSession:
         self.model = model
         self.max_history = max_history
         self.messages = [{"role": "system", "content": system_prompt}]
+        self.tools = self._get_tool_definitions()
+    
+    def _get_tool_definitions(self) -> List[Dict]:
+        """Define available tools for the model."""
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": "web_search",
+                    "description": "Search the web",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {"type": "string"}
+                        },
+                        "required": ["query"]
+                    }
+                }
+            }
+        ]
+    
+    def register_tool(self, name: str, fn: Callable[..., Any]):
+        """Register a custom tool function."""
+        self.executor.register(name, fn)
     
     async def chat(self, query: str, stream: bool = True) -> str:
+        """Send a message and get response with tool execution."""
         self.messages.append({"role": "user", "content": query})
         
-        for _ in range(MAX_TOOL_ROUNDS):
-            content, tool_calls = await self._stream_round()
+        for _ in range(self.MAX_TOOL_ROUNDS):
+            content, tool_calls = await self._stream_round(stream)
             
             if not tool_calls:
                 break
@@ -125,13 +160,17 @@ class KimiSession:
                 self.messages.append({
                     "role": "tool",
                     "tool_call_id": tc["id"],
-                    "name": tc["function"]["name"],
                     "content": result,
                 })
+            
+            # Trim history if needed
+            if len(self.messages) > self.max_history:
+                self.messages = [self.messages[0]] + self.messages[-(self.max_history-1):]
         
         return content
     
-    async def _stream_round(self) -> tuple[str, list[dict]]:
+    async def _stream_round(self, stream: bool) -> tuple[str, list[dict]]:
+        """Execute one round of streaming chat."""
         response = await self.client.chat.completions.create(
             model=self.model,
             messages=self.messages,
@@ -140,7 +179,6 @@ class KimiSession:
             max_tokens=32768,
             stream=True,
             tool_choice="auto",
-            extra_body={"thinking": {"type": "enabled"}},
         )
         
         content_parts = []
@@ -149,12 +187,10 @@ class KimiSession:
         async for chunk in response:
             delta = chunk.choices[0].delta
             
-            if hasattr(delta, "reasoning_content") and delta.reasoning_content:
-                print(delta.reasoning_content, end="", flush=True)
-            
             if delta.content:
                 content_parts.append(delta.content)
-                print(delta.content, end="", flush=True)
+                if stream:
+                    print(delta.content, end="", flush=True)
             
             if delta.tool_calls:
                 for tcd in delta.tool_calls:
@@ -172,6 +208,10 @@ class KimiSession:
                         entry["function"]["arguments"] += tcd.function.arguments
         
         return "".join(content_parts), list(tc_buf.values())
+    
+    async def aclose(self):
+        """Close session resources."""
+        await self.executor.aclose()
 ```
 
 ## Rules
@@ -183,6 +223,7 @@ class KimiSession:
 - Set reasonable timeouts (90s for tools)
 - Use `asyncio.gather()` for concurrent tool execution
 - Trim history to prevent context overflow
+- Call `aclose()` to cleanup resources
 
 ### Don't
 - Block the event loop with sync calls

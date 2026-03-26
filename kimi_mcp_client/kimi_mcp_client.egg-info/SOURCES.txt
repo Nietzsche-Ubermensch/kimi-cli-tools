@@ -1,5 +1,7 @@
 README.md
 setup.py
+agents/__init__.py
+agents/research_agent.py
 kimi_mcp_client.egg-info/PKG-INFO
 kimi_mcp_client.egg-info/SOURCES.txt
 kimi_mcp_client.egg-info/dependency_links.txt
@@ -16,3 +18,6 @@ servers/github.py
 servers/linear.py
 servers/perplexity.py
 servers/playwright.py
+tools/__init__.py
+tools/code_analyzer.py
+tools/file_operations.py
