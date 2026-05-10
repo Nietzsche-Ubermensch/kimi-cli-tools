@@ -12,7 +12,10 @@ from .tui.ui import run_tui
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="kimi")
+    parser = argparse.ArgumentParser(
+        prog="kimi",
+        description="Kimi CLI (DeepSeek-inspired architecture, Kimi runtime semantics)",
+    )
     parser.add_argument("--one-shot", dest="one_shot")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--model")
@@ -36,6 +39,7 @@ async def _run(args: argparse.Namespace) -> int:
     llm = OpenAICompatibleClient(settings.base_url, os.environ.get("KIMI_API_KEY") or os.environ.get("MOONSHOT_API_KEY"))
     engine = AgentEngine(settings=settings, llm_client=llm, config=cfg)
 
+    # Non-TUI mode: no interactive terminal bootstrap.
     if args.command == "serve" and args.http:
         await serve_http(engine, cfg.raw.get("runtime_api", {}))
         return 0
@@ -46,6 +50,7 @@ async def _run(args: argparse.Namespace) -> int:
         await llm.close()
         return 0
 
+    # TUI mode branch: terminal UI lifecycle ownership begins here.
     await run_tui(engine)
     await llm.close()
     return 0
