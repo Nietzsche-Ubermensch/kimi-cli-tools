@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import aiohttp
+import json
 from typing import AsyncIterator, Optional
 
 from .llm_client import AbstractLLMClient, with_retry
@@ -50,7 +51,15 @@ class OpenAICompatibleClient(AbstractLLMClient):
                     if line == "[DONE]":
                         chunks.append(LLMChunk(done=True, raw={"done": True}))
                         break
-                    chunks.append(LLMChunk(text=line, raw={"line": line}))
+                    token = line
+                    try:
+                        payload_json = json.loads(line)
+                        choices = payload_json.get("choices", [])
+                        if choices:
+                            token = choices[0].get("delta", {}).get("content", "") or token
+                        chunks.append(LLMChunk(text=token, raw=payload_json))
+                    except json.JSONDecodeError:
+                        chunks.append(LLMChunk(text=token, raw={"line": line}))
             return chunks
 
         for chunk in await with_retry(_do_request):

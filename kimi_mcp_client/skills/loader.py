@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -47,6 +48,7 @@ def _collect_paths(extra_paths: list[str] | None = None) -> list[Path]:
 
 
 def load_skills(extra_paths: list[str] | None = None) -> list[Skill]:
+    logger = logging.getLogger("kimi.skills")
     skills: list[Skill] = []
     for root in _collect_paths(extra_paths):
         if not root.exists():
@@ -54,6 +56,7 @@ def load_skills(extra_paths: list[str] | None = None) -> list[Skill]:
         for file_path in root.glob("**/SKILL.md"):
             try:
                 skills.append(_parse_skill(file_path))
-            except Exception:
+            except Exception as exc:
+                logger.warning("Failed to parse skill file %s: %s", file_path, exc)
                 continue
     return skills

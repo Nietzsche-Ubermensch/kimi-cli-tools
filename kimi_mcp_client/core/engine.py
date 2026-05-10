@@ -70,6 +70,15 @@ class AgentEngine:
         if self.engine_config.checkpoint_path.exists():
             self.engine_config.checkpoint_path.unlink()
 
+    async def _on_tool_call(self, name: str, args: dict) -> None:
+        await self._emit(ToolCalled(type="tool_called", tool_name=name, args=args))
+
+    def _save_session_snapshot(self) -> None:
+        SerializableSession(
+            session_id=self.session.session_id,
+            data={"turns": [t.__dict__ for t in self.session.turns]},
+        ).save(Path.home() / ".kimi" / "sessions" / "latest.json")
+
     async def handle_prompt(self, prompt: str) -> str:
         self._checkpoint(prompt)
         turn = Turn(turn_id=str(uuid.uuid4()), prompt=prompt)
@@ -90,15 +99,13 @@ class AgentEngine:
                 llm_client=self.llm_client,
                 messages=messages,
                 registry=self.registry,
-                on_tool_call=lambda name, args: asyncio.create_task(self._emit(ToolCalled(type="tool_called", tool_name=name, args=args))),
+                on_tool_call=self._on_tool_call,
             )
             for item in turn.tool_results:
                 await self._emit(ToolResult(type="tool_result", tool_name=item["tool"], result=item["result"]))
             await self._emit(TurnComplete(type="turn_complete", turn_id=turn.turn_id, content=content))
             self.threads.append_turn(self.session.session_id, turn)
-            SerializableSession(session_id=self.session.session_id, data={"turns": [t.__dict__ for t in self.session.turns]}).save(
-                Path.home() / ".kimi" / "sessions" / "latest.json"
-            )
+            self._save_session_snapshot()
             self._clear_checkpoint()
             self.session.pending_diagnostics.extend(self.lsp_manager.pop_pending_messages())
             return content

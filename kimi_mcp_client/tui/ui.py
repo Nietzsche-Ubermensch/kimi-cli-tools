@@ -32,3 +32,7 @@ async def run_tui(engine) -> None:
             await engine.handle_prompt(text)
     finally:
         listener.cancel()
+        try:
+            await listener
+        except asyncio.CancelledError:
+            pass

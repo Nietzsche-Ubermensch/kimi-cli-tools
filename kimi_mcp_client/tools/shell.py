@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import shlex
 
 from ..sandbox.execpolicy import Action, PermissionEngine
 from .spec import ToolResult
@@ -13,8 +14,14 @@ async def shell_tool(args: dict, permission_engine: PermissionEngine | None = No
         verdict = permission_engine.evaluate("shell", None)
         if verdict == Action.DENY:
             return ToolResult(content="Denied by permission policy", is_error=True)
-    proc = await asyncio.create_subprocess_shell(
-        command,
+    try:
+        argv = shlex.split(command)
+    except ValueError as exc:
+        return ToolResult(content=f"Invalid command: {exc}", is_error=True)
+    if not argv:
+        return ToolResult(content="Empty command", is_error=True)
+    proc = await asyncio.create_subprocess_exec(
+        *argv,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )

@@ -10,12 +10,30 @@ from .task_manager import DurableTaskManager
 def create_app(engine, task_manager: DurableTaskManager | None = None) -> web.Application:
     app = web.Application()
     tm = task_manager or DurableTaskManager(max_workers=engine.settings.max_workers)
+    token = engine.config.raw.get("runtime_api", {}).get("token")
 
-    async def create_thread(_: web.Request) -> web.Response:
+    async def _ensure_auth(request: web.Request) -> web.Response | None:
+        if not token:
+            return None
+        if request.headers.get("Authorization") != f"Bearer {token}":
+            return web.json_response({"error": "unauthorized"}, status=401)
+        return None
+
+    async def handle_turn_task(payload: dict) -> dict:
+        content = await engine.handle_prompt(payload.get("prompt", ""))
+        return {"content": content}
+
+    async def create_thread(request: web.Request) -> web.Response:
+        unauthorized = await _ensure_auth(request)
+        if unauthorized:
+            return unauthorized
         thread = engine.threads.create_thread()
         return web.json_response(thread, status=201)
 
     async def thread_events(request: web.Request) -> web.StreamResponse:
+        unauthorized = await _ensure_auth(request)
+        if unauthorized:
+            return unauthorized
         thread_id = request.match_info["thread_id"]
         since_seq = int(request.query.get("since_seq", "0"))
         data = engine.threads.get_thread(thread_id)
@@ -28,19 +46,31 @@ def create_app(engine, task_manager: DurableTaskManager | None = None) -> web.Ap
         return resp
 
     async def start_turn(request: web.Request) -> web.Response:
+        unauthorized = await _ensure_auth(request)
+        if unauthorized:
+            return unauthorized
         body = await request.json()
         content = await engine.handle_prompt(body.get("prompt", ""))
         return web.json_response({"content": content}, status=201)
 
     async def create_task(request: web.Request) -> web.Response:
+        unauthorized = await _ensure_auth(request)
+        if unauthorized:
+            return unauthorized
         body = await request.json()
         rec = tm.create_task(body.get("kind", "turn"), body.get("payload", {}))
         return web.json_response(rec.__dict__, status=201)
 
     async def get_task(request: web.Request) -> web.Response:
+        unauthorized = await _ensure_auth(request)
+        if unauthorized:
+            return unauthorized
         return web.json_response(tm.get_task(request.match_info["task_id"]))
 
     async def delete_task(request: web.Request) -> web.Response:
+        unauthorized = await _ensure_auth(request)
+        if unauthorized:
+            return unauthorized
         tm.cancel_task(request.match_info["task_id"])
         return web.Response(status=204)
 
@@ -56,7 +86,7 @@ def create_app(engine, task_manager: DurableTaskManager | None = None) -> web.Ap
     )
 
     async def on_startup(_: web.Application) -> None:
-        tm.register_handler("turn", lambda payload: engine.handle_prompt(payload.get("prompt", "")))
+        tm.register_handler("turn", handle_turn_task)
         await tm.start()
 
     async def on_cleanup(_: web.Application) -> None:
@@ -67,12 +97,13 @@ def create_app(engine, task_manager: DurableTaskManager | None = None) -> web.Ap
     return app
 
 
-async def serve_http(engine, cfg: dict | None = None) -> None:
+async def serve_http(engine, cfg: dict | None = None, stop_event: asyncio.Event | None = None) -> None:
     cfg = cfg or {}
     app = create_app(engine)
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, cfg.get("host", "127.0.0.1"), int(cfg.get("port", 8765)))
     await site.start()
-    while True:
-        await asyncio.sleep(3600)
+    if stop_event is None:
+        stop_event = asyncio.Event()
+    await stop_event.wait()

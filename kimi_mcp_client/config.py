@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import tomllib
+from tomllib import TOMLDecodeError
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List
@@ -31,7 +32,10 @@ def _expand_env(value: Any) -> Any:
 def load_config(path: str | Path = "config.toml") -> LoadedConfig:
     config_path = Path(path)
     if config_path.exists():
-        raw = tomllib.loads(config_path.read_text(encoding="utf-8"))
+        try:
+            raw = tomllib.loads(config_path.read_text(encoding="utf-8"))
+        except TOMLDecodeError as exc:
+            raise ValueError(f"Invalid TOML in {config_path}: {exc}") from exc
     else:
         raw = {}
 

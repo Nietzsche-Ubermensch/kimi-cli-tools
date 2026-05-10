@@ -4,6 +4,8 @@ from .spec import ToolResult
 
 
 async def rlm_exec(args: dict, llm_callback=None) -> ToolResult:
+    if not args.get("allow_exec", False):
+        return ToolResult(content="rlm_exec requires allow_exec=true", is_error=True)
     code = args.get("code", "")
     captured: list[str] = []
 

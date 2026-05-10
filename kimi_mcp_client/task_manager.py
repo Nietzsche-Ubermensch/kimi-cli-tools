@@ -63,6 +63,8 @@ class DurableTaskManager:
             rec.timeline.append({"event": "running"})
             self._save(rec)
             try:
+                if kind not in self.handlers:
+                    raise KeyError(f"No handler registered for task kind: {kind}")
                 handler = self.handlers[kind]
                 result = await handler(payload)
                 rec.state = "completed"

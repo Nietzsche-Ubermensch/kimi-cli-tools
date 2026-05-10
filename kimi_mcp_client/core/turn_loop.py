@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import asyncio
 import json
-from typing import Callable
+from typing import Awaitable, Callable
 
 from ..models import ChatMessage, LLMRequest
 from ..tools.registry import ToolRegistry
@@ -16,7 +15,7 @@ async def run_streaming_turn(
     llm_client,
     messages: list[ChatMessage],
     registry: ToolRegistry,
-    on_tool_call: Callable[[str, dict], None] | None = None,
+    on_tool_call: Callable[[str, dict], Awaitable[None]] | None = None,
 ) -> str:
     request = LLMRequest(model=model, messages=messages, stream=True)
     text_chunks: list[str] = []
@@ -32,12 +31,14 @@ async def run_streaming_turn(
 
     # Minimal DeepSeek-style tool block: {"tool":"name","args":{...}}
     try:
+        if not combined.startswith("{"):
+            raise json.JSONDecodeError("not-json", combined, 0)
         payload = json.loads(combined)
         if isinstance(payload, dict) and payload.get("tool"):
             tool_name = payload["tool"]
             args = payload.get("args", {})
             if on_tool_call:
-                on_tool_call(tool_name, args)
+                await on_tool_call(tool_name, args)
             result = await registry.dispatch(tool_name, args)
             turn.tool_results.append({"tool": tool_name, "result": result.content})
             turn.response = result.content

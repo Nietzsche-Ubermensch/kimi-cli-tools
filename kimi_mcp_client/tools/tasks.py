@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from .spec import ToolResult
 
 
@@ -12,7 +14,7 @@ def build_task_tools(task_manager):
         task_id = args["id"]
         rec = task_manager.get_task(task_id)
         rec.setdefault("checklist", {}).update(args.get("checklist", {}))
-        task_manager._file(task_id).write_text(__import__("json").dumps(rec, indent=2), encoding="utf-8")
+        task_manager._file(task_id).write_text(json.dumps(rec, indent=2), encoding="utf-8")
         return ToolResult(content="task updated")
 
     async def task_gate_run(args: dict) -> ToolResult:
