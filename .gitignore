@@ -79,5 +79,9 @@ apps/
 .claude/*.local.md
 .claude/*.local.json
 
+# AI-agent handoff and analysis documents (embed local paths; not for VCS)
+.claude/HANDOFF_*.md
+.claude/CODEMAP_*.md
+
 # Maintainer-internal design notes (trade-secret material, never published)
 .private/
