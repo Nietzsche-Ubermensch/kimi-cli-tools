@@ -33,9 +33,3 @@
 - Improved architecture docs with transport details.
 
 This setup allows the workflow to run autonomously while maintaining high quality.
-
-## Automated Commit Message Generation (Implemented)
-- We use Conventional Commits with Linear IDs.
-- Interactive commits: `npm run commit` (Commitizen).
-- Commits are validated via commitlint + husky `commit-msg` hook.
-- Required format: `[KIM-xxx] <type>: <description>`.
